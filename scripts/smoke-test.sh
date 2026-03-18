@@ -49,7 +49,7 @@ for dir in \
     /opt/agentos/skills \
     /opt/agentos/bin \
     /home/agentos/workspace \
-    /home/agentos/.openclaw; do
+    /home/agentos/.claude; do
     if [[ -d "${ROOTFS}${dir}" ]]; then
         pass "$dir"
     else
@@ -102,9 +102,9 @@ else
 fi
 echo ""
 
-# ── OpenClaw config ───────────────────────────────────────────────
-echo "OpenClaw:"
-if [[ -f "${ROOTFS}/home/agentos/.openclaw/openclaw.json" ]]; then
+# ── Claude Code config ────────────────────────────────────────────
+echo "Claude Code:"
+if [[ -f "${ROOTFS}/home/agentos/.claude/agent.json" ]]; then
     pass "Default config installed"
 else
     fail "Default config missing"

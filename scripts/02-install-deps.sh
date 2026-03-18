@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
 # Phase 02: Install dependencies
-# Installs Node.js 22, Docker, and OpenClaw into the rootfs
+# Installs Node.js 22, Docker, and Claude Code into the rootfs
 #
 set -euo pipefail
 
@@ -42,16 +42,16 @@ chroot "${ROOTFS}" bash -c '
 '
 ok "Docker installed"
 
-# ── Install OpenClaw ───────────────────────────────────────────────
-log "Installing OpenClaw..."
+# ── Install Claude Code ────────────────────────────────────────────
+log "Installing Claude Code..."
 chroot "${ROOTFS}" bash -c '
-    # Install OpenClaw globally
-    npm install -g openclaw@latest
+    # Install Claude Code globally
+    npm install -g @anthropic-ai/claude-code
 
     # Verify installation
-    openclaw --version || echo "OpenClaw installed (version check may need gateway)"
+    claude --version
 '
-ok "OpenClaw installed"
+ok "Claude Code installed"
 
 # ── Install additional useful tools ────────────────────────────────
 log "Installing utility packages..."

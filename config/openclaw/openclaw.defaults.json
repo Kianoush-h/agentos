@@ -3,19 +3,8 @@
     "models": {
         "primary": {
             "provider": "anthropic",
-            "model": "claude-sonnet-4-20250514"
+            "model": "claude-sonnet-4-6"
         }
-    },
-    "gateway": {
-        "port": 18789,
-        "host": "127.0.0.1",
-        "auth": "token"
-    },
-    "sandbox": {
-        "engine": "docker",
-        "execution_policy": "ask",
-        "max_concurrent": 3,
-        "timeout_seconds": 300
     },
     "logging": {
         "level": "info",

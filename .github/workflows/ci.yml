@@ -51,6 +51,6 @@ jobs:
 
       - name: Check AppArmor profile
         run: |
-          profile="config/apparmor/agentos-openclaw"
+          profile="config/apparmor/agentos-claude"
           grep -q 'deny' "$profile"        || { echo "FAIL: AppArmor profile missing deny rules"; exit 1; }
           grep -q 'vault' "$profile"       || { echo "FAIL: AppArmor profile missing vault reference"; exit 1; }

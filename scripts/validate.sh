@@ -45,7 +45,7 @@ echo ""
 # ── Check config files ────────────────────────────────────────────
 echo "Configuration files:"
 for cfg in \
-    config/apparmor/agentos-openclaw \
+    config/apparmor/agentos-claude \
     config/systemd/agentos-gateway.service \
     config/systemd/agentos-broker.service \
     config/openclaw/openclaw.defaults.json \
@@ -104,8 +104,8 @@ echo ""
 
 # ── Verify AppArmor profile structure ─────────────────────────────
 echo "AppArmor profile:"
-apparmor="${PROJECT_ROOT}/config/apparmor/agentos-openclaw"
-if grep -q 'profile agentos-openclaw' "$apparmor"; then
+apparmor="${PROJECT_ROOT}/config/apparmor/agentos-claude"
+if grep -q 'profile agentos-claude' "$apparmor"; then
     pass "Profile name defined"
 else
     fail "Profile name not found"

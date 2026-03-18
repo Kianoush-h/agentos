@@ -1,6 +1,6 @@
 [Unit]
-Description=AgentOS OpenClaw Gateway
-Documentation=https://docs.openclaw.ai
+Description=AgentOS Claude Code Gateway
+Documentation=https://github.com/anthropics/claude-code
 After=network-online.target docker.service
 Wants=network-online.target
 Requires=docker.service
@@ -14,8 +14,8 @@ WorkingDirectory=/home/agentos/workspace
 # Load credentials from vault via broker
 EnvironmentFile=-/etc/agentos/env
 
-# Start the OpenClaw gateway
-ExecStart=/usr/bin/node /usr/lib/node_modules/openclaw/dist/index.js gateway --port 18789
+# Start Claude Code in headless agent mode
+ExecStart=/usr/bin/claude --dangerously-skip-permissions
 ExecReload=/bin/kill -USR1 $MAINPID
 
 # Restart policy

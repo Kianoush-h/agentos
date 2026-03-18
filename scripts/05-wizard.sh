@@ -16,7 +16,7 @@ cat > "${ROOTFS}/opt/agentos/bin/setup-wizard.sh" <<'WIZARD'
 #
 set -euo pipefail
 
-SETUP_DONE_FLAG="/home/agentos/.openclaw/.setup-complete"
+SETUP_DONE_FLAG="/home/agentos/.claude/.setup-complete"
 ENV_FILE="/etc/agentos/env"
 LOG="/var/log/agentos/setup.log"
 
@@ -218,27 +218,23 @@ if [[ -n "$API_KEY" && -n "$KEY_VAR" ]]; then
     echo -e "  ${GREEN}✓${NC} API key stored in vault"
 fi
 
-# Configure OpenClaw
+# Configure Claude Code agent
 sudo -u agentos bash -c "
     cd /home/agentos
-    # Create basic openclaw config
-    cat > /home/agentos/.openclaw/openclaw.json <<OCJSON
+    # Write agent config to .claude/agent.json
+    cat > /home/agentos/.claude/agent.json <<CJSON
 {
     \"name\": \"${AGENT_NAME}\",
     \"models\": {
         \"primary\": {
             \"provider\": \"${PROVIDER}\",
-            \"model\": \"$([ "$PROVIDER" = "anthropic" ] && echo "claude-sonnet-4-20250514" || echo "gpt-4o")\"
+            \"model\": \"$([ "$PROVIDER" = "anthropic" ] && echo "claude-sonnet-4-6" || echo "gpt-4o")\"
         }
-    },
-    \"gateway\": {
-        \"port\": 18789,
-        \"auth\": \"token\"
     }
 }
-OCJSON
+CJSON
 "
-echo -e "  ${GREEN}✓${NC} OpenClaw configured"
+echo -e "  ${GREEN}✓${NC} Claude Code configured"
 
 # Restart the gateway
 sudo systemctl restart agentos-gateway
@@ -267,8 +263,7 @@ echo "  ╚═══════════════════════
 echo -e "${NC}"
 
 if [[ "$CHANNEL_CONFIG" == "telegram" ]]; then
-    echo -e "  ${YELLOW}Next: Message your Telegram bot and pair it with:${NC}"
-    echo -e "  ${BOLD}  openclaw pairing approve telegram <CODE>${NC}"
+    echo -e "  ${YELLOW}Next: Message your Telegram bot to start chatting with ${AGENT_NAME}.${NC}"
 fi
 
 echo ""

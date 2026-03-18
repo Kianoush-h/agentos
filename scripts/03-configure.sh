@@ -7,8 +7,8 @@ set -euo pipefail
 
 log "Configuring system services..."
 
-# ── systemd service for OpenClaw Gateway ───────────────────────────
-log "Installing OpenClaw gateway systemd service..."
+# ── systemd service for Claude Code Gateway ───────────────────────
+log "Installing Claude Code gateway systemd service..."
 cp "${PROJECT_ROOT}/config/systemd/agentos-gateway.service" \
    "${ROOTFS}/etc/systemd/system/agentos-gateway.service"
 
@@ -87,10 +87,10 @@ chroot "${ROOTFS}" chmod +x /opt/agentos/bin/credential-handler.sh
 cp "${PROJECT_ROOT}/config/systemd/agentos-broker.service" \
    "${ROOTFS}/etc/systemd/system/agentos-broker.service"
 
-# ── AppArmor profile for OpenClaw ──────────────────────────────────
+# ── AppArmor profile for Claude Code ──────────────────────────────
 log "Installing AppArmor profile..."
-cp "${PROJECT_ROOT}/config/apparmor/agentos-openclaw" \
-   "${ROOTFS}/etc/apparmor.d/agentos-openclaw"
+cp "${PROJECT_ROOT}/config/apparmor/agentos-claude" \
+   "${ROOTFS}/etc/apparmor.d/agentos-claude"
 
 # ── Audit logging configuration ───────────────────────────────────
 log "Configuring audit logging..."
@@ -101,18 +101,18 @@ cat > "${ROOTFS}/etc/audit/rules.d/agentos.rules" <<'AUDIT'
 
 # Log file writes in sensitive directories
 -w /etc/agentos/ -p wa -k agentos-config
--w /home/agentos/.openclaw/ -p wa -k agentos-openclaw
+-w /home/agentos/.claude/ -p wa -k agentos-claude
 
 # Log network connections by agentos user
 -a always,exit -F arch=b64 -F uid=1100 -S connect -k agentos-network
 AUDIT
 
-# ── Environment file and default OpenClaw config ──────────────────
+# ── Environment file and default Claude Code config ───────────────
 log "Installing environment template and default config..."
 cp "${PROJECT_ROOT}/config/openclaw/env.template" "${ROOTFS}/etc/agentos/env"
 cp "${PROJECT_ROOT}/config/openclaw/openclaw.defaults.json" \
-   "${ROOTFS}/home/agentos/.openclaw/openclaw.json"
-chroot "${ROOTFS}" chown agentos:agentos /home/agentos/.openclaw/openclaw.json
+   "${ROOTFS}/home/agentos/.claude/agent.json"
+chroot "${ROOTFS}" chown agentos:agentos /home/agentos/.claude/agent.json
 
 chroot "${ROOTFS}" chmod 600 /etc/agentos/env
 

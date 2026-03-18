@@ -114,7 +114,7 @@ mkdir -p "${ROOTFS}/etc/agentos/vault"
 mkdir -p "${ROOTFS}/var/log/agentos"
 mkdir -p "${ROOTFS}/opt/agentos/skills"
 mkdir -p "${ROOTFS}/opt/agentos/bin"
-mkdir -p "${ROOTFS}/home/agentos/.openclaw"
+mkdir -p "${ROOTFS}/home/agentos/.claude"
 mkdir -p "${ROOTFS}/home/agentos/workspace"
 
 # Set permissions
