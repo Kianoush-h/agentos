@@ -48,6 +48,9 @@ for cfg in \
     config/apparmor/agentos-claude \
     config/systemd/agentos-gateway.service \
     config/systemd/agentos-broker.service \
+    config/systemd/agentos-dashboard.service \
+    config/dashboard/server.js \
+    config/dashboard/public/index.html \
     config/openclaw/openclaw.defaults.json \
     config/openclaw/env.template; do
     if [[ -f "${PROJECT_ROOT}/${cfg}" ]]; then

@@ -1,0 +1,41 @@
+[Unit]
+Description=AgentOS Web Dashboard
+Documentation=https://github.com/SecureAgentOS/agentos
+After=network-online.target agentos-gateway.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=agentos
+Group=agentos
+WorkingDirectory=/opt/agentos/dashboard
+
+EnvironmentFile=-/etc/agentos/env
+Environment=DASHBOARD_PORT=18789
+
+ExecStart=/usr/bin/node /opt/agentos/dashboard/server.js
+ExecReload=/bin/kill -HUP $MAINPID
+
+Restart=on-failure
+RestartSec=5
+
+# Security hardening
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=read-only
+ReadWritePaths=/var/log/agentos /tmp
+PrivateTmp=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictNamespaces=yes
+RestrictRealtime=yes
+LockPersonality=yes
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=agentos-dashboard
+
+[Install]
+WantedBy=multi-user.target

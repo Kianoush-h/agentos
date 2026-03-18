@@ -116,10 +116,23 @@ chroot "${ROOTFS}" chown agentos:agentos /home/agentos/.claude/agent.json
 
 chroot "${ROOTFS}" chmod 600 /etc/agentos/env
 
+# ── Install web dashboard ──────────────────────────────────────────
+log "Installing web dashboard..."
+mkdir -p "${ROOTFS}/opt/agentos/dashboard/public"
+cp "${PROJECT_ROOT}/config/dashboard/server.js" \
+   "${ROOTFS}/opt/agentos/dashboard/server.js"
+cp "${PROJECT_ROOT}/config/dashboard/public/index.html" \
+   "${ROOTFS}/opt/agentos/dashboard/public/index.html"
+chroot "${ROOTFS}" chown -R agentos:agentos /opt/agentos/dashboard
+
+cp "${PROJECT_ROOT}/config/systemd/agentos-dashboard.service" \
+   "${ROOTFS}/etc/systemd/system/agentos-dashboard.service"
+
 # ── Enable services ────────────────────────────────────────────────
 log "Enabling systemd services..."
 chroot "${ROOTFS}" systemctl enable agentos-gateway.service
 chroot "${ROOTFS}" systemctl enable agentos-broker.service
+chroot "${ROOTFS}" systemctl enable agentos-dashboard.service
 chroot "${ROOTFS}" systemctl enable apparmor.service
 chroot "${ROOTFS}" systemctl enable auditd.service
 

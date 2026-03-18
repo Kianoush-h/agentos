@@ -79,7 +79,7 @@ echo ""
 
 # ── Systemd services ─────────────────────────────────────────────
 echo "Systemd services:"
-for svc in agentos-gateway agentos-broker; do
+for svc in agentos-gateway agentos-broker agentos-dashboard; do
     if [[ -f "${ROOTFS}/etc/systemd/system/${svc}.service" ]]; then
         pass "${svc}.service installed"
     else
@@ -90,7 +90,7 @@ echo ""
 
 # ── AppArmor profile ─────────────────────────────────────────────
 echo "Security:"
-if [[ -f "${ROOTFS}/etc/apparmor.d/agentos-openclaw" ]]; then
+if [[ -f "${ROOTFS}/etc/apparmor.d/agentos-claude" ]]; then
     pass "AppArmor profile installed"
 else
     fail "AppArmor profile missing"
@@ -141,6 +141,20 @@ if [[ -f "${ROOTFS}/opt/agentos/bin/setup-wizard.sh" ]]; then
     fi
 else
     fail "setup-wizard.sh missing"
+fi
+echo ""
+
+# ── Web dashboard ────────────────────────────────────────────────
+echo "Dashboard:"
+if [[ -f "${ROOTFS}/opt/agentos/dashboard/server.js" ]]; then
+    pass "dashboard server.js installed"
+else
+    fail "dashboard server.js missing"
+fi
+if [[ -f "${ROOTFS}/opt/agentos/dashboard/public/index.html" ]]; then
+    pass "dashboard index.html installed"
+else
+    fail "dashboard index.html missing"
 fi
 echo ""
 
