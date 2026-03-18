@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 #
 # Phase 06: Package VM image
-# Converts the rootfs into OVA (VirtualBox) and QCOW2 (QEMU/KVM) formats
+# Converts the rootfs into OVA (VirtualBox) and QCOW2 (QEMU/KVM) formats.
+# Produces a GPT disk with both an EFI System Partition and a root partition,
+# installing GRUB for both UEFI and legacy BIOS so the image boots on any hypervisor.
 #
 set -euo pipefail
 
@@ -10,6 +12,8 @@ log "Packaging VM image..."
 RAW_DISK="${BUILD_DIR}/${VM_NAME}.raw"
 QCOW2_DISK="${OUTPUT_DIR}/${VM_NAME}.qcow2"
 OVA_FILE="${OUTPUT_DIR}/${VM_NAME}.ova"
+MOUNT_POINT="${BUILD_DIR}/mnt"
+EFI_MOUNT="${BUILD_DIR}/mnt-efi"
 
 # ── Unmount chroot filesystems ─────────────────────────────────────
 log "Unmounting chroot filesystems..."
@@ -17,58 +21,70 @@ for mp in "${ROOTFS}/dev/pts" "${ROOTFS}/dev" "${ROOTFS}/proc" "${ROOTFS}/sys" "
     mountpoint -q "$mp" 2>/dev/null && umount -lf "$mp" || true
 done
 
-# ── Create raw disk image ─────────────────────────────────────────
-log "Creating raw disk image (${DISK_SIZE})..."
+# ── Install UEFI GRUB packages into rootfs ────────────────────────
+log "Installing GRUB UEFI packages into rootfs..."
+chroot "${ROOTFS}" apt-get update -qq
+chroot "${ROOTFS}" apt-get install -y --no-install-recommends \
+    grub-efi-amd64 grub-efi-amd64-bin grub-pc-bin \
+    dosfstools efibootmgr
+chroot "${ROOTFS}" apt-get clean
+
+# ── Create raw disk image with GPT layout ─────────────────────────
+# Partition layout:
+#   p1: EFI System Partition (256 MiB, FAT32)
+#   p2: root filesystem (remaining space, ext4)
+log "Creating raw disk image (${DISK_SIZE}) with GPT..."
 qemu-img create -f raw "$RAW_DISK" "$DISK_SIZE"
 
-# Create partition table and single ext4 partition
-log "Partitioning disk..."
-parted -s "$RAW_DISK" mklabel msdos
-parted -s "$RAW_DISK" mkpart primary ext4 1MiB 100%
-parted -s "$RAW_DISK" set 1 boot on
+parted -s "$RAW_DISK" mklabel gpt
+parted -s "$RAW_DISK" mkpart ESP fat32 1MiB 257MiB
+parted -s "$RAW_DISK" set 1 esp on
+parted -s "$RAW_DISK" mkpart primary ext4 257MiB 100%
 
 # Set up loop device
 LOOP_DEV=$(losetup --find --show --partscan "$RAW_DISK")
-PART_DEV="${LOOP_DEV}p1"
+EFI_PART="${LOOP_DEV}p1"
+ROOT_PART="${LOOP_DEV}p2"
 
-# Wait for partition device to appear
 sleep 2
-if [[ ! -b "$PART_DEV" ]]; then
+if [[ ! -b "$ROOT_PART" ]]; then
     partprobe "$LOOP_DEV"
     sleep 2
 fi
 
-# Format partition
-log "Formatting partition as ext4..."
-mkfs.ext4 -L "AgentOS" "$PART_DEV"
+# ── Format partitions ──────────────────────────────────────────────
+log "Formatting EFI partition (FAT32)..."
+mkfs.fat -F32 -n "EFI" "$EFI_PART"
 
-# Mount and copy rootfs
-MOUNT_POINT="${BUILD_DIR}/mnt"
+log "Formatting root partition (ext4)..."
+mkfs.ext4 -L "AgentOS" "$ROOT_PART"
+
+# ── Mount and copy rootfs ──────────────────────────────────────────
 mkdir -p "$MOUNT_POINT"
-mount "$PART_DEV" "$MOUNT_POINT"
+mount "$ROOT_PART" "$MOUNT_POINT"
+
+mkdir -p "${MOUNT_POINT}/boot/efi"
+mount "$EFI_PART" "${MOUNT_POINT}/boot/efi"
 
 log "Copying rootfs to disk image (this takes a few minutes)..."
 rsync -aHAX --info=progress2 "${ROOTFS}/" "${MOUNT_POINT}/"
 
-# ── Install GRUB bootloader ───────────────────────────────────────
-log "Installing GRUB bootloader..."
+# ── Update fstab with correct UUIDs ───────────────────────────────
+EFI_UUID=$(blkid -s UUID -o value "$EFI_PART")
+ROOT_UUID=$(blkid -s UUID -o value "$ROOT_PART")
 
-# Mount necessary filesystems for GRUB install
-mount --bind /dev  "${MOUNT_POINT}/dev"
-mount --bind /dev/pts "${MOUNT_POINT}/dev/pts"
-mount -t proc proc "${MOUNT_POINT}/proc"
-mount -t sysfs sys "${MOUNT_POINT}/sys"
-
-# Update fstab with correct UUID
-PART_UUID=$(blkid -s UUID -o value "$PART_DEV")
 cat > "${MOUNT_POINT}/etc/fstab" <<EOF
-UUID=${PART_UUID}  /  ext4  errors=remount-ro  0  1
+UUID=${ROOT_UUID}  /          ext4  errors=remount-ro  0  1
+UUID=${EFI_UUID}   /boot/efi  vfat  umask=0077         0  1
 EOF
 
-# Install GRUB
-chroot "${MOUNT_POINT}" grub-install --target=i386-pc "$LOOP_DEV"
+# ── Mount virtual filesystems for GRUB install ────────────────────
+log "Installing GRUB (UEFI + BIOS fallback)..."
+for fs in dev dev/pts proc sys; do
+    mount --bind "/${fs}" "${MOUNT_POINT}/${fs}"
+done
 
-# Configure GRUB
+# ── Configure GRUB ────────────────────────────────────────────────
 cat > "${MOUNT_POINT}/etc/default/grub" <<'GRUB'
 GRUB_DEFAULT=0
 GRUB_TIMEOUT=3
@@ -76,18 +92,31 @@ GRUB_DISTRIBUTOR="AgentOS"
 GRUB_CMDLINE_LINUX_DEFAULT="quiet splash"
 GRUB_CMDLINE_LINUX=""
 GRUB_DISABLE_OS_PROBER=true
+GRUB_THEME="/boot/grub/themes/agentos/theme.txt"
 GRUB
+
+# Install GRUB for UEFI
+chroot "${MOUNT_POINT}" grub-install \
+    --target=x86_64-efi \
+    --efi-directory=/boot/efi \
+    --bootloader-id=AgentOS \
+    --no-nvram \
+    --removable
+
+# Install GRUB for BIOS fallback (protective MBR on GPT disk)
+chroot "${MOUNT_POINT}" grub-install \
+    --target=i386-pc \
+    "$LOOP_DEV"
 
 chroot "${MOUNT_POINT}" update-grub
 
-# Unmount
-umount -lf "${MOUNT_POINT}/dev/pts" || true
-umount -lf "${MOUNT_POINT}/dev" || true
-umount -lf "${MOUNT_POINT}/proc" || true
-umount -lf "${MOUNT_POINT}/sys" || true
+# ── Unmount everything ─────────────────────────────────────────────
+for fs in dev/pts dev proc sys; do
+    umount -lf "${MOUNT_POINT}/${fs}" || true
+done
+umount -lf "${MOUNT_POINT}/boot/efi" || true
 umount -lf "${MOUNT_POINT}"
 
-# Detach loop device
 losetup -d "$LOOP_DEV"
 
 # ── Convert to QCOW2 ──────────────────────────────────────────────
@@ -101,7 +130,6 @@ log "Creating OVA for VirtualBox..."
 VMDK_DISK="${BUILD_DIR}/${VM_NAME}.vmdk"
 qemu-img convert -f raw -O vmdk "$RAW_DISK" "$VMDK_DISK"
 
-# Create OVF descriptor
 VMDK_SIZE=$(stat -c%s "$VMDK_DISK")
 cat > "${BUILD_DIR}/${VM_NAME}.ovf" <<OVF
 <?xml version="1.0"?>
@@ -182,7 +210,6 @@ cat > "${BUILD_DIR}/${VM_NAME}.ovf" <<OVF
 </Envelope>
 OVF
 
-# Package OVA (tar of OVF + VMDK)
 log "Packaging OVA..."
 cd "${BUILD_DIR}"
 tar -cf "$OVA_FILE" "${VM_NAME}.ovf" "${VM_NAME}.vmdk"

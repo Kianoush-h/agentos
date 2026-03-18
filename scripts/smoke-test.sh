@@ -68,12 +68,17 @@ else
 fi
 echo ""
 
-# ── Node.js ───────────────────────────────────────────────────────
+# ── Runtime binaries ─────────────────────────────────────────────
 echo "Runtime:"
 if [[ -f "${ROOTFS}/usr/bin/node" ]]; then
     pass "Node.js binary present"
 else
     fail "Node.js binary missing"
+fi
+if [[ -f "${ROOTFS}/usr/local/bin/ollama" ]]; then
+    pass "Ollama binary present"
+else
+    fail "Ollama binary missing"
 fi
 echo ""
 

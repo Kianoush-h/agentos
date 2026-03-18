@@ -1,0 +1,53 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080" viewBox="0 0 1920 1080">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%"   stop-color="#0f0c29"/>
+      <stop offset="50%"  stop-color="#1a1740"/>
+      <stop offset="100%" stop-color="#24243e"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="50%" cy="50%" r="40%">
+      <stop offset="0%"   stop-color="#7c6cff" stop-opacity="0.15"/>
+      <stop offset="100%" stop-color="#0f0c29" stop-opacity="0"/>
+    </radialGradient>
+    <!-- Grid lines -->
+    <pattern id="grid" width="80" height="80" patternUnits="userSpaceOnUse">
+      <path d="M 80 0 L 0 0 0 80" fill="none" stroke="#302b63" stroke-width="0.5" opacity="0.4"/>
+    </pattern>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1920" height="1080" fill="url(#bg)"/>
+
+  <!-- Grid overlay -->
+  <rect width="1920" height="1080" fill="url(#grid)"/>
+
+  <!-- Central glow -->
+  <rect width="1920" height="1080" fill="url(#glow)"/>
+
+  <!-- Decorative arc -->
+  <circle cx="960" cy="540" r="320" fill="none" stroke="#7c6cff" stroke-width="1" opacity="0.12"/>
+  <circle cx="960" cy="540" r="380" fill="none" stroke="#7c6cff" stroke-width="0.5" opacity="0.08"/>
+  <circle cx="960" cy="540" r="440" fill="none" stroke="#7c6cff" stroke-width="0.5" opacity="0.05"/>
+
+  <!-- Corner accents -->
+  <line x1="0" y1="0" x2="200" y2="0"    stroke="#7c6cff" stroke-width="1" opacity="0.3"/>
+  <line x1="0" y1="0" x2="0"   y2="120"  stroke="#7c6cff" stroke-width="1" opacity="0.3"/>
+  <line x1="1920" y1="0" x2="1720" y2="0"    stroke="#7c6cff" stroke-width="1" opacity="0.3"/>
+  <line x1="1920" y1="0" x2="1920" y2="120"  stroke="#7c6cff" stroke-width="1" opacity="0.3"/>
+  <line x1="0"    y1="1080" x2="200"  y2="1080" stroke="#7c6cff" stroke-width="1" opacity="0.3"/>
+  <line x1="0"    y1="1080" x2="0"    y2="960"  stroke="#7c6cff" stroke-width="1" opacity="0.3"/>
+  <line x1="1920" y1="1080" x2="1720" y2="1080" stroke="#7c6cff" stroke-width="1" opacity="0.3"/>
+  <line x1="1920" y1="1080" x2="1920" y2="960"  stroke="#7c6cff" stroke-width="1" opacity="0.3"/>
+
+  <!-- Wordmark -->
+  <text x="960" y="510" text-anchor="middle" fill="#ffffff"
+        font-family="'Segoe UI', system-ui, sans-serif"
+        font-size="96" font-weight="200" letter-spacing="-2"
+        opacity="0.9">Agent<tspan fill="#7c6cff">OS</tspan></text>
+
+  <!-- Tagline -->
+  <text x="960" y="568" text-anchor="middle" fill="#ffffff"
+        font-family="'Segoe UI', system-ui, sans-serif"
+        font-size="22" font-weight="300" letter-spacing="6"
+        opacity="0.35">YOUR AI · YOUR MACHINE</text>
+</svg>

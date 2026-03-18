@@ -81,29 +81,16 @@ EOF
 # Compile dconf database
 chroot "${ROOTFS}" dconf update || true
 
-# ── Create wallpaper placeholder ───────────────────────────────────
-log "Creating wallpaper placeholder..."
+# ── Install branding assets ────────────────────────────────────────
+log "Installing branding assets..."
 mkdir -p "${ROOTFS}/usr/share/backgrounds"
+mkdir -p "${ROOTFS}/usr/share/plymouth/themes/agentos"
+mkdir -p "${ROOTFS}/boot/grub/themes/agentos"
 
-# Generate a simple SVG wallpaper (placeholder until real branding)
-cat > "${ROOTFS}/usr/share/backgrounds/agentos-wallpaper.svg" <<'SVG'
-<svg xmlns="http://www.w3.org/2000/svg" width="1920" height="1080">
-  <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0%" stop-color="#0f0c29"/>
-      <stop offset="50%" stop-color="#302b63"/>
-      <stop offset="100%" stop-color="#24243e"/>
-    </linearGradient>
-  </defs>
-  <rect width="1920" height="1080" fill="url(#bg)"/>
-  <text x="960" y="500" text-anchor="middle" fill="#ffffff" font-family="sans-serif"
-        font-size="72" font-weight="300" opacity="0.3">AgentOS</text>
-  <text x="960" y="560" text-anchor="middle" fill="#ffffff" font-family="sans-serif"
-        font-size="24" font-weight="300" opacity="0.2">Your AI, your machine</text>
-</svg>
-SVG
+# Wallpaper — install SVG from branding/ and convert to PNG
+cp "${PROJECT_ROOT}/branding/wallpaper.svg" \
+   "${ROOTFS}/usr/share/backgrounds/agentos-wallpaper.svg"
 
-# Convert SVG to PNG (if rsvg-convert is available)
 chroot "${ROOTFS}" bash -c '
     apt-get install -y --no-install-recommends librsvg2-bin || true
     if command -v rsvg-convert &>/dev/null; then
@@ -114,6 +101,26 @@ chroot "${ROOTFS}" bash -c '
            /usr/share/backgrounds/agentos-wallpaper-dark.png
     fi
 '
+
+# Plymouth theme
+cp "${PROJECT_ROOT}/branding/plymouth/agentos/agentos.plymouth" \
+   "${ROOTFS}/usr/share/plymouth/themes/agentos/agentos.plymouth"
+cp "${PROJECT_ROOT}/branding/plymouth/agentos/agentos.script" \
+   "${ROOTFS}/usr/share/plymouth/themes/agentos/agentos.script"
+
+chroot "${ROOTFS}" bash -c '
+    apt-get install -y --no-install-recommends plymouth plymouth-themes || true
+    update-alternatives --install /usr/share/plymouth/themes/default.plymouth \
+        default.plymouth /usr/share/plymouth/themes/agentos/agentos.plymouth 100 || true
+    update-initramfs -u || true
+'
+
+# GRUB theme
+cp "${PROJECT_ROOT}/branding/grub/theme.txt" \
+   "${ROOTFS}/boot/grub/themes/agentos/theme.txt"
+# Copy wallpaper as GRUB background (will be used if PNG conversion succeeded)
+cp "${ROOTFS}/usr/share/backgrounds/agentos-wallpaper.png" \
+   "${ROOTFS}/boot/grub/themes/agentos/background.png" 2>/dev/null || true
 
 # ── Desktop entry for AgentOS Dashboard ────────────────────────────
 log "Creating AgentOS dashboard launcher..."

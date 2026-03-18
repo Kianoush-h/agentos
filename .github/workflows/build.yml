@@ -1,47 +1,77 @@
 name: Build AgentOS VM Image
 
+# Full VM builds require a self-hosted runner with:
+#   - Ubuntu 24.04 host
+#   - sudo access (for debootstrap, chroot, losetup, mount)
+#   - 20GB+ free disk space in /tmp
+#   - debootstrap, qemu-utils, parted, rsync installed
+#
+# Validation and linting run on standard GitHub-hosted runners.
+# The build job is manual-only (workflow_dispatch) or on release tags.
+
 on:
   push:
-    branches: [main]
     tags: ['v*']
-  pull_request:
-    branches: [main]
   workflow_dispatch:
+    inputs:
+      edition:
+        description: 'Edition to build (lite or server)'
+        required: true
+        default: 'lite'
+        type: choice
+        options: [lite, server]
 
 env:
   VM_NAME: agentos-lite
   UBUNTU_RELEASE: noble
 
 jobs:
-  build:
-    name: Build VM Image
+  # ── Validation — runs on standard hosted runners ────────────────
+  validate:
+    name: Validate scripts and config
     runs-on: ubuntu-24.04
-    timeout-minutes: 60
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Install build dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            debootstrap \
-            qemu-utils \
-            parted \
-            rsync \
-            dosfstools \
-            grub-pc-bin \
-            squashfs-tools
-
-      - name: Validate build config
+      - name: Run validation suite
         run: |
           chmod +x scripts/*.sh
           ./scripts/validate.sh
 
+      - name: Shell lint (shellcheck)
+        run: |
+          sudo apt-get install -y shellcheck
+          find scripts/ -name "*.sh" -print0 | xargs -0 shellcheck --severity=warning
+
+      - name: Validate JSON config
+        run: |
+          find config/openclaw/ -name "*.json" -print0 | \
+            xargs -0 -I{} python3 -m json.tool {} /dev/null
+
+  # ── Full build — requires self-hosted runner ────────────────────
+  build:
+    name: Build VM Image (${{ github.event.inputs.edition || 'lite' }})
+    runs-on: [self-hosted, linux, agentos-builder]
+    needs: validate
+    timeout-minutes: 120
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check build host requirements
+        run: |
+          echo "Host: $(uname -a)"
+          echo "Disk:"
+          df -h /tmp
+          for tool in debootstrap qemu-img parted rsync losetup; do
+            command -v "$tool" || { echo "MISSING: $tool"; exit 1; }
+          done
+          echo "All build tools present"
+
       - name: Build VM image
         run: |
-          sudo ./scripts/build-vm.sh --lite
+          EDITION="${{ github.event.inputs.edition || 'lite' }}"
+          sudo BUILD_DIR=/tmp/agentos-build ./scripts/build-vm.sh --${EDITION}
 
       - name: Run smoke tests
         run: |
@@ -52,7 +82,7 @@ jobs:
         with:
           name: ${{ env.VM_NAME }}-qcow2
           path: /tmp/agentos-build/output/${{ env.VM_NAME }}.qcow2
-          compression-level: 0  # Already compressed
+          compression-level: 0
 
       - name: Upload OVA artifact
         uses: actions/upload-artifact@v4
@@ -67,8 +97,13 @@ jobs:
           name: checksums
           path: /tmp/agentos-build/output/SHA256SUMS
 
+      - name: Clean up build artifacts
+        if: always()
+        run: sudo rm -rf /tmp/agentos-build
+
+  # ── Release — triggered on version tags ────────────────────────
   release:
-    name: Create Release
+    name: Create GitHub Release
     needs: build
     if: startsWith(github.ref, 'refs/tags/v')
     runs-on: ubuntu-24.04
@@ -91,7 +126,7 @@ jobs:
           body: |
             ## AgentOS ${{ github.ref_name }}
 
-            Ubuntu-based VM image with OpenClaw pre-configured for AI automation.
+            Ubuntu 24.04 LTS VM image with Claude Code pre-configured for AI automation.
 
             ### Quick start
             ```bash
@@ -105,14 +140,16 @@ jobs:
 
             ### Default credentials
             - Username: `user`
-            - Password: `agentos` (you'll be prompted to change on first login)
+            - Password: `agentos` (you will be prompted to change on first login)
 
             ### What's included
             - Ubuntu 24.04 LTS (Noble Numbat)
-            - OpenClaw agent framework (latest)
+            - Claude Code agent (`@anthropic-ai/claude-code`)
+            - Ollama (local model runtime)
             - Node.js 22 + Docker
             - GNOME desktop (Lite edition)
-            - AppArmor security profiles
+            - AppArmor security profiles + credential vault
+            - Web dashboard on port 18789
             - First-run setup wizard
           draft: false
           prerelease: ${{ contains(github.ref, 'alpha') || contains(github.ref, 'beta') }}

@@ -1,0 +1,38 @@
+/* AgentOS Plymouth boot splash script */
+
+Window.SetBackgroundTopColor(0.06, 0.05, 0.16);
+Window.SetBackgroundBottomColor(0.09, 0.09, 0.24);
+
+logo_image = Image("logo.png");
+logo_sprite = Sprite(logo_image);
+logo_sprite.SetX(Window.GetWidth()  / 2 - logo_image.GetWidth()  / 2);
+logo_sprite.SetY(Window.GetHeight() / 2 - logo_image.GetHeight() / 2 - 40);
+logo_sprite.SetOpacity(1);
+
+/* Progress bar */
+bar_width  = 260;
+bar_height = 4;
+bar_x = Window.GetWidth()  / 2 - bar_width / 2;
+bar_y = Window.GetHeight() / 2 + 80;
+
+bar_bg = Image.CreateFilledRectangle(bar_width, bar_height, 0.19, 0.17, 0.39, 1.0);
+bar_bg_sprite = Sprite(bar_bg);
+bar_bg_sprite.SetX(bar_x);
+bar_bg_sprite.SetY(bar_y);
+
+bar_fill = Image.CreateFilledRectangle(1, bar_height, 0.49, 0.42, 1.0, 1.0);
+bar_sprite = Sprite(bar_fill);
+bar_sprite.SetX(bar_x);
+bar_sprite.SetY(bar_y);
+
+progress = 0;
+
+fun boot_progress_cb(duration, progress_val) {
+    progress = progress_val;
+    new_width = Math.Int(bar_width * progress);
+    if (new_width < 1) new_width = 1;
+    bar_fill2 = Image.CreateFilledRectangle(new_width, bar_height, 0.49, 0.42, 1.0, 1.0);
+    bar_sprite.SetImage(bar_fill2);
+}
+
+Plymouth.SetBootProgressFunction(boot_progress_cb);

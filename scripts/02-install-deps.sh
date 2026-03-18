@@ -77,6 +77,19 @@ chroot "${ROOTFS}" bash -c '
     echo "WARN: Chromium not available, browser skills will need manual setup"
 '
 
+# ── Install Ollama (local model runtime) ───────────────────────────
+log "Installing Ollama..."
+chroot "${ROOTFS}" bash -c '
+    curl -fsSL https://ollama.com/install.sh | sh
+
+    # Enable Ollama as a system service
+    systemctl enable ollama
+
+    # Verify
+    ollama --version
+'
+ok "Ollama installed"
+
 # ── Clean up apt cache ─────────────────────────────────────────────
 log "Cleaning apt cache..."
 chroot "${ROOTFS}" apt-get clean

@@ -124,6 +124,8 @@ main() {
 
     if [[ "$EDITION" == "--lite" ]]; then
         run_phase "04" "desktop"
+    else
+        run_phase "04" "server"
     fi
 
     run_phase "05" "wizard"

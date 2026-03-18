@@ -26,7 +26,7 @@ echo ""
 
 # ── Check build scripts exist ─────────────────────────────────────
 echo "Build scripts:"
-for phase in 01-bootstrap 02-install-deps 03-configure 04-desktop 05-wizard 06-package; do
+for phase in 01-bootstrap 02-install-deps 03-configure 04-desktop 04-server 05-wizard 06-package; do
     script="${SCRIPT_DIR}/${phase}.sh"
     if [[ -f "$script" ]]; then
         pass "$phase.sh exists"

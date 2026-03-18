@@ -1,0 +1,43 @@
+# AgentOS GRUB Theme
+# Installed to /boot/grub/themes/agentos/
+
+title-text: ""
+desktop-color: "#0f0c29"
+desktop-image: "background.png"
+
++ boot_menu {
+  left   = 15%
+  top    = 20%
+  width  = 70%
+  height = 60%
+  item_color            = "#888888"
+  selected_item_color   = "#ffffff"
+  item_height           = 36
+  item_spacing          = 4
+  item_font             = "Sans Regular 14"
+  selected_item_pixmap_style = "select_*.png"
+  icon_width  = 32
+  icon_height = 32
+  item_icon_space = 16
+}
+
++ label {
+  top    = 83%
+  left   = 0
+  width  = 100%
+  align  = "center"
+  id     = "__timeout__"
+  text   = "Booting AgentOS in %d seconds"
+  color  = "#555577"
+  font   = "Sans Regular 12"
+}
+
++ label {
+  top   = 5%
+  left  = 0
+  width = 100%
+  align = "center"
+  text  = "AgentOS"
+  color = "#7c6cff"
+  font  = "Sans Bold 28"
+}

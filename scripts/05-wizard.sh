@@ -126,8 +126,8 @@ case "$PROVIDER_CHOICE" in
         API_KEY=""
         KEY_VAR=""
         echo ""
-        echo -e "${YELLOW}Ollama will be configured after setup.${NC}"
-        echo -e "${YELLOW}You'll need to run: ollama pull mistral (or your preferred model)${NC}"
+        echo -e "${BLUE}Available models: mistral, llama3, phi3, gemma${NC}"
+        prompt OLLAMA_MODEL "Which model to pull?" "mistral"
         ;;
     *)
         echo -e "${RED}Invalid choice, defaulting to Anthropic${NC}"
@@ -151,10 +151,9 @@ echo "  You can message your agent from any of these platforms:"
 echo ""
 echo "  1) Telegram — easiest to set up"
 echo "  2) Discord"
-echo "  3) WhatsApp"
-echo "  4) Skip for now — I'll use the web dashboard"
+echo "  3) Skip for now — I'll use the web dashboard"
 echo ""
-prompt CHANNEL_CHOICE "Select channel (1-4)" "4"
+prompt CHANNEL_CHOICE "Select channel (1-3)" "3"
 
 CHANNEL_CONFIG=""
 case "$CHANNEL_CHOICE" in
@@ -177,12 +176,6 @@ case "$CHANNEL_CHOICE" in
         echo ""
         prompt_secret DISCORD_TOKEN "Paste your Discord bot token"
         CHANNEL_CONFIG="discord"
-        ;;
-    3)
-        echo ""
-        echo -e "${YELLOW}WhatsApp requires additional setup after the wizard.${NC}"
-        echo -e "${YELLOW}We'll configure this via the OpenClaw CLI.${NC}"
-        CHANNEL_CONFIG="whatsapp-later"
         ;;
     *)
         CHANNEL_CONFIG="skip"
@@ -218,6 +211,15 @@ if [[ -n "$API_KEY" && -n "$KEY_VAR" ]]; then
     echo -e "  ${GREEN}✓${NC} API key stored in vault"
 fi
 
+# If Ollama selected, start it and pull the chosen model
+if [[ "$PROVIDER" == "ollama" ]]; then
+    echo -e "${BLUE}Pulling Ollama model: ${OLLAMA_MODEL:-mistral} (this may take a few minutes)...${NC}"
+    sudo systemctl start ollama
+    sleep 3
+    ollama pull "${OLLAMA_MODEL:-mistral}"
+    echo -e "  ${GREEN}✓${NC} Ollama model ready"
+fi
+
 # Configure Claude Code agent
 sudo -u agentos bash -c "
     cd /home/agentos
@@ -228,13 +230,13 @@ sudo -u agentos bash -c "
     \"models\": {
         \"primary\": {
             \"provider\": \"${PROVIDER}\",
-            \"model\": \"$([ "$PROVIDER" = "anthropic" ] && echo "claude-sonnet-4-6" || echo "gpt-4o")\"
+            \"model\": \"$([ "$PROVIDER" = "ollama" ] && echo "${OLLAMA_MODEL:-mistral}" || ([ "$PROVIDER" = "anthropic" ] && echo "claude-sonnet-4-6" || echo "gpt-4o"))\"
         }
     }
 }
 CJSON
 "
-echo -e "  ${GREEN}✓${NC} Claude Code configured"
+echo -e "  ${GREEN}✓${NC} Agent configured"
 
 # Restart the gateway
 sudo systemctl restart agentos-gateway
