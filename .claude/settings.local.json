@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -r agentos-claude /z/side/SecureAgentOS/agentos/ --include=*.sh --include=*.md)",
+      "Bash(grep -r 'claude --' /z/side/SecureAgentOS/agentos --include=*.sh --include=*.js --include=*.md)",
+      "Bash(bash scripts/validate.sh 2>&1)",
+      "Bash(python3 -m json.tool /z/side/SecureAgentOS/agentos/config/openclaw/openclaw.defaults.json)",
+      "Bash(grep -r \"ROOTFS\\\\|PROJECT_ROOT\\\\|SCRIPT_DIR\" /z/side/SecureAgentOS/agentos/scripts/*.sh)",
+      "Bash(git:*)",
+      "Bash(grep:*)"
+    ]
+  }
+}
